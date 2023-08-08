@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 
-    'user_management',
+    'customer_user_management',
 ]
 
 MIDDLEWARE = [
@@ -166,7 +166,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'user_management.HaruumUser'
 
 OUTLET_APPLICATION_URL = 'http://localhost:8000'
 OUTLET_VALIDATION_URL = f'{OUTLET_APPLICATION_URL}/user/check-exist/?email='

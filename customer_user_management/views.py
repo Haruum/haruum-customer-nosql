@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -61,6 +62,7 @@ def serve_get_customer_data_by_email(request):
 
 @require_POST
 @api_view(['POST'])
+@transaction.atomic()
 def serve_update_customer_address(request):
     """
     This view updates the customer's latest delivery address,

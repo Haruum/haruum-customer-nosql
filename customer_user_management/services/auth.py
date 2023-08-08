@@ -1,8 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist
-
 from haruum_customer.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from haruum_customer.exceptions import InvalidRegistrationException, InvalidRequestException, FailedToFetchException
 from haruum_customer.settings import OUTLET_VALIDATION_URL
+from rest_framework import status
 from ..models import Customer
 from . import utils
 import numbers
@@ -44,6 +44,9 @@ def validate_customer_information(request_data: dict):
     if not isinstance(request_data.get('phone_number'), str):
         raise InvalidRegistrationException('Phone number must be a string')
 
+    if len(request_data.get('phone_number')) > 15:
+        raise InvalidRegistrationException('Phone number must not exceed 15 characters')
+
     if not utils.validate_phone_number(request_data.get('phone_number')):
         raise InvalidRegistrationException('Phone number is invalid')
 
@@ -70,6 +73,9 @@ def validate_laundry_outlet_does_not_exist_for_email(email):
     try:
         outlet_exists_response = requests.get(validation_url)
         validation_result = outlet_exists_response.json()
+
+        if outlet_exists_response.status_code != status.HTTP_200_OK:
+            raise FailedToFetchException(validation_result.get('message'))
 
         if validation_result.get('outlet_exists'):
             raise InvalidRequestException(f'Outlet with email {email} already exists')
@@ -157,7 +163,7 @@ def save_address_update_to_database(customer, address_data):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def update_customer_address(request_data: dict):
     validate_update_customer_address(request_data)
-    customer = utils.get_customer_from_email(request_data.get('email'))
+    customer = utils.get_customer_from_email_thread_safe(request_data.get('email'))
     save_address_update_to_database(customer, request_data)
 
 

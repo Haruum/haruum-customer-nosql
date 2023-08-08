@@ -1,15 +1,11 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import make_password, check_password
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
-from .managers import HaruumUserManager
+from .managers import CustomerManager
 
 
-class HaruumUser(AbstractUser):
-    username = None
-    first_name = None
-    last_name = None
-
+class Customer(models.Model):
     email = models.EmailField(_('email address'), unique=True)
     name = models.CharField(max_length=100, null=False)
     phone_number = models.CharField(max_length=15, null=False)
@@ -17,16 +13,18 @@ class HaruumUser(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'phone_number']
 
-    objects = HaruumUserManager()
+    objects = CustomerManager()
 
-    class Meta:
-        db_table = 'auth_user'
-
-
-class Customer(HaruumUser):
     latest_delivery_address = models.TextField()
     latest_latitude = models.FloatField()
     latest_longitude = models.FloatField()
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
+        self.save()
+
+    def check_password(self, raw_password) -> bool:
+        return check_password(raw_password, self.password)
 
     def set_address(self, address):
         self.latest_delivery_address = address
