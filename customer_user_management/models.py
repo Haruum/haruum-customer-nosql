@@ -9,6 +9,7 @@ class Customer(models.Model):
     email = models.EmailField(_('email address'), unique=True)
     name = models.CharField(max_length=100, null=False)
     phone_number = models.CharField(max_length=15, null=False)
+    password = models.TextField(default=None)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'phone_number']
