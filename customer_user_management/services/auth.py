@@ -3,7 +3,8 @@ from haruum_customer.decorators import catch_exception_and_convert_to_invalid_re
 from haruum_customer.exceptions import InvalidRegistrationException, InvalidRequestException, FailedToFetchException
 from haruum_customer.settings import OUTLET_VALIDATION_URL
 from rest_framework import status
-from ..models import Customer
+from ..dto.Customer import Customer
+from ..repositories import customer as customer_repository
 from . import utils
 import numbers
 import requests
@@ -19,7 +20,7 @@ def validate_register_customer_data(request_data: dict):
     if not utils.validate_email(email):
         raise InvalidRegistrationException('Email is invalid')
 
-    if utils.customer_with_email_exists(request_data.get('email')):
+    if customer_repository.customer_with_email_exists(request_data.get('email')):
         raise InvalidRegistrationException(f'Email {email} is already registered')
 
     if not password:
@@ -84,7 +85,7 @@ def validate_laundry_outlet_does_not_exist_for_email(email):
         raise FailedToFetchException('Failed to validate outlet existence')
 
 
-def save_customer_data(customer_data):
+def save_customer_data(customer_data, database_session):
     email = customer_data.get('email')
     password = customer_data.get('password')
     name = customer_data.get('name')
@@ -93,7 +94,8 @@ def save_customer_data(customer_data):
     latitude = customer_data.get('latitude')
     longitude = customer_data.get('longitude')
 
-    customer = Customer.objects.create_user(
+    customer = Customer()
+    customer.set_values(
         email=email,
         password=password,
         name=name,
@@ -103,15 +105,15 @@ def save_customer_data(customer_data):
         latest_longitude=longitude
     )
 
-    return customer
+    return customer_repository.create_customer(customer, database_session=database_session)
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((InvalidRegistrationException,))
-def register_customer(request_data: dict):
+def register_customer(request_data: dict, database_session):
     validate_register_customer_data(request_data)
     validate_laundry_outlet_does_not_exist_for_email(request_data.get('email'))
     validate_customer_information(request_data)
-    return save_customer_data(request_data)
+    return save_customer_data(request_data, database_session=database_session)
 
 
 def validate_email_and_password(request_data: dict):
@@ -131,13 +133,13 @@ def validate_email_and_password(request_data: dict):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def check_email_and_password(request_data: dict):
     validate_email_and_password(request_data)
-    customer = utils.get_customer_from_email(request_data.get('email'))
+    customer = customer_repository.get_customer_by_email(request_data.get('email'))
     return customer.check_password(request_data.get('password'))
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def get_customer_data(request_data: dict):
-    customer = utils.get_customer_from_email(request_data.get('email'))
+    customer = customer_repository.get_customer_by_email(request_data.get('email'))
     return customer
 
 
@@ -155,19 +157,20 @@ def validate_update_customer_address(request_data: dict):
         raise InvalidRequestException('Longitude must be a number')
 
 
-def save_address_update_to_database(customer, address_data):
+def save_address_update_to_database(customer, address_data, database_session):
     customer.set_address(address_data.get('address'))
     customer.set_coordinate([address_data.get('latitude'), address_data.get('longitude')])
+    customer_repository.update_customer(customer, database_session=database_session)
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
-def update_customer_address(request_data: dict):
+def update_customer_address(request_data: dict, database_session):
     validate_update_customer_address(request_data)
-    customer = utils.get_customer_from_email_thread_safe(request_data.get('email'))
-    save_address_update_to_database(customer, request_data)
+    customer = customer_repository.get_customer_by_email(request_data.get('email'))
+    save_address_update_to_database(customer, request_data, database_session=database_session)
 
 
 def check_customer_existence(request_data):
-    return utils.customer_with_email_exists(request_data.get('email'))
+    return customer_repository.customer_with_email_exists(request_data.get('email'))
 
 

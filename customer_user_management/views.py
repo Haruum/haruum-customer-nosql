@@ -1,15 +1,17 @@
 from django.db import transaction
+from haruum_customer.decorators import transaction_atomic
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import CustomerSerializer
+from .serializers.CustomerSerializer import CustomerSerializer
 from .services import auth
 import json
 
 
 @require_POST
 @api_view(['POST'])
-def serve_register_customer(request):
+@transaction_atomic()
+def serve_register_customer(session, request):
     """
     This view registers a laundry customer
     based on the data given in the request body.
@@ -22,7 +24,7 @@ def serve_register_customer(request):
     password: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    customer = auth.register_customer(request_data)
+    customer = auth.register_customer(request_data, database_session=session)
     response_data = CustomerSerializer(customer).data
     return Response(data=response_data)
 
@@ -62,8 +64,8 @@ def serve_get_customer_data_by_email(request):
 
 @require_POST
 @api_view(['POST'])
-@transaction.atomic()
-def serve_update_customer_address(request):
+@transaction_atomic()
+def serve_update_customer_address(session, request):
     """
     This view updates the customer's latest delivery address,
     along with its coordinates.
@@ -75,7 +77,7 @@ def serve_update_customer_address(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    auth.update_customer_address(request_data)
+    auth.update_customer_address(request_data, database_session=session)
     response_data = {'message': 'Customer address is successfully updated'}
     return Response(data=response_data)
 
