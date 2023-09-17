@@ -85,7 +85,7 @@ def validate_laundry_outlet_does_not_exist_for_email(email):
         raise FailedToFetchException('Failed to validate outlet existence')
 
 
-def save_customer_data(customer_data, database_session):
+def save_customer_data(customer_data):
     email = customer_data.get('email')
     password = customer_data.get('password')
     name = customer_data.get('name')
@@ -105,15 +105,15 @@ def save_customer_data(customer_data, database_session):
         latest_longitude=longitude
     )
 
-    return customer_repository.create_customer(customer, database_session=database_session)
+    return customer_repository.create_customer(customer)
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((InvalidRegistrationException,))
-def register_customer(request_data: dict, database_session):
+def register_customer(request_data: dict):
     validate_register_customer_data(request_data)
     validate_laundry_outlet_does_not_exist_for_email(request_data.get('email'))
     validate_customer_information(request_data)
-    return save_customer_data(request_data, database_session=database_session)
+    return save_customer_data(request_data)
 
 
 def validate_email_and_password(request_data: dict):
@@ -157,17 +157,17 @@ def validate_update_customer_address(request_data: dict):
         raise InvalidRequestException('Longitude must be a number')
 
 
-def save_address_update_to_database(customer, address_data, database_session):
+def save_address_update_to_database(customer, address_data):
     customer.set_address(address_data.get('address'))
     customer.set_coordinate([address_data.get('latitude'), address_data.get('longitude')])
-    customer_repository.update_customer(customer, database_session=database_session)
+    customer_repository.update_customer(customer)
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
-def update_customer_address(request_data: dict, database_session):
+def update_customer_address(request_data: dict):
     validate_update_customer_address(request_data)
     customer = customer_repository.get_customer_by_email(request_data.get('email'))
-    save_address_update_to_database(customer, request_data, database_session=database_session)
+    save_address_update_to_database(customer, request_data)
 
 
 def check_customer_existence(request_data):

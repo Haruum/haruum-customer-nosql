@@ -4,8 +4,8 @@ from haruum_customer.collections import CUSTOMER
 from ..dto.Customer import Customer
 
 
-def create_customer(customer_dto: Customer, database_session):
-    DATABASE[CUSTOMER].insert_one(customer_dto.get_all(), session=database_session)
+def create_customer(customer_dto: Customer):
+    DATABASE[CUSTOMER].insert_one(customer_dto.get_all())
     return customer_dto
 
 
@@ -30,10 +30,9 @@ def customer_with_email_exists(email):
         return False
 
 
-def update_customer(updated_customer_dto: Customer, database_session):
+def update_customer(updated_customer_dto: Customer):
     DATABASE[CUSTOMER].find_one_and_update(
         {'email': updated_customer_dto.get_email()},
-        {'$set': updated_customer_dto.get_all()},
-        session=database_session
+        {'$set': updated_customer_dto.get_all()}
     )
 
