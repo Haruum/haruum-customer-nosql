@@ -129,5 +129,3 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-OUTLET_APPLICATION_URL = 'http://localhost:8000'
-OUTLET_VALIDATION_URL = f'{OUTLET_APPLICATION_URL}/user/check-exist/?email='

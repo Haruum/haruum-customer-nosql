@@ -1,13 +1,10 @@
 from django.core.exceptions import ObjectDoesNotExist
 from haruum_customer.decorators import catch_exception_and_convert_to_invalid_request_decorator
-from haruum_customer.exceptions import InvalidRegistrationException, InvalidRequestException, FailedToFetchException
-from haruum_customer.settings import OUTLET_VALIDATION_URL
-from rest_framework import status
+from haruum_customer.exceptions import InvalidRegistrationException, InvalidRequestException
 from ..dto.Customer import Customer
 from ..repositories import customer as customer_repository
 from . import utils
 import numbers
-import requests
 
 
 def validate_register_customer_data(request_data: dict):
@@ -64,27 +61,6 @@ def validate_customer_information(request_data: dict):
         raise InvalidRegistrationException('Longitude must be a number')
 
 
-def validate_laundry_outlet_does_not_exist_for_email(email):
-    """
-    This method fetches the CustomerService and
-    checks if the inputted email exists in the customer's database.
-    """
-    validation_url = f'{OUTLET_VALIDATION_URL}{email}'
-
-    try:
-        outlet_exists_response = requests.get(validation_url)
-        validation_result = outlet_exists_response.json()
-
-        if outlet_exists_response.status_code != status.HTTP_200_OK:
-            raise FailedToFetchException(validation_result.get('message'))
-
-        if validation_result.get('outlet_exists'):
-            raise InvalidRequestException(f'Outlet with email {email} already exists')
-
-    except requests.exceptions.RequestException:
-        raise FailedToFetchException('Failed to validate outlet existence')
-
-
 def save_customer_data(customer_data):
     email = customer_data.get('email')
     password = customer_data.get('password')
@@ -111,7 +87,6 @@ def save_customer_data(customer_data):
 @catch_exception_and_convert_to_invalid_request_decorator((InvalidRegistrationException,))
 def register_customer(request_data: dict):
     validate_register_customer_data(request_data)
-    validate_laundry_outlet_does_not_exist_for_email(request_data.get('email'))
     validate_customer_information(request_data)
     return save_customer_data(request_data)
 
